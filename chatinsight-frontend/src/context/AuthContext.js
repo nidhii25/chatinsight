@@ -1,10 +1,8 @@
-// Below is a proposed file structure. Each section represents a separate file.
 // ===========================
 // File: src/context/AuthContext.js
 // ===========================
 
 import React, { useState, useEffect } from 'react';
-import { COLORS, SENTIMENT_COLORS } from '../constants/colors';
 
 const API_BASE = 'http://localhost:8000';
 const AuthContext = React.createContext();
@@ -20,6 +18,8 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  console.log("User at start:", user);
+
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     if (savedToken) {
@@ -33,8 +33,9 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = async (authToken) => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+        headers: { Authorization: `Bearer ${authToken}` },
       });
+
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
@@ -56,18 +57,20 @@ export const AuthProvider = ({ children }) => {
 
     const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: 'POST',
-      body: formData
+      body: formData,
     });
 
     if (!res.ok) throw new Error('Login failed');
 
     const data = await res.json();
     const accessToken = data.access_token;
+
     localStorage.setItem('token', accessToken);
     setToken(accessToken);
 
     await fetchUser(accessToken);
-    window.location.href = "/";
+
+    window.location.href = '/';
     return data;
   };
 
@@ -75,7 +78,7 @@ export const AuthProvider = ({ children }) => {
     const res = await fetch(`${API_BASE}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
+      body: JSON.stringify(userData),
     });
 
     if (!res.ok) {
@@ -87,26 +90,28 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-  try {
-    // Call backend logout so chats get deleted
-    await fetch(`${API_BASE}/api/auth/logout`, {
-      method: "POST",
-      headers: { 
-        Authorization: `Bearer ${token}` 
-      }
-    });
-  } catch (err) {
-    console.error("Backend logout failed:", err);
-  }
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      console.error('Backend logout failed:', err);
+    }
 
-  // Frontend cleanup
-  localStorage.removeItem("token");
-  setToken(null);
-  setUser(null);
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
 
-  // Redirect to login
-  window.location.href = "/";
+    window.location.href = '/';
+  };
+
+  // 🔥🔥 THE PART THAT WAS MISSING
+  return (
+    <AuthContext.Provider
+      value={{ user, token, loading, login, register, logout }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
-
-};
-
